@@ -13,14 +13,13 @@
     # This 'env_file_content' variable dynamically constructs the content
     # of the .env file that will be placed on the remote server.
     # It uses Jinja2 templating to inject values from group_vars/webservers.yml.
+    # Note: FRONTEND_URL here is for the backend's CORS setting.
     env_file_content: |
       DB_HOST=db
       DB_USER={{ db_user }}
       DB_PASSWORD={{ db_password }}
       DB_NAME={{ db_name }}
       JWT_SECRET={{ jwt_secret }}
-      # FRONTEND_URL is set to the VM's IP address (ansible_host)
-      # and the frontend_app_port (e.g., 3000) for external access.
       FRONTEND_URL=http://{{ ansible_host }}:{{ frontend_app_port }}
       PORT={{ backend_api_port }} # This is the port your backend Express app listens on internally
 
@@ -52,7 +51,6 @@
         mode: '0640' # Secure permissions: owner read/write, group read, others no access
 
     - name: Bring down existing services (if any) and remove volumes
-      # Uses the newer docker_compose_v2 module for 'docker compose' (v2) command
       community.docker.docker_compose_v2:
         project_src: "{{ deploy_dir }}" # Path to the docker-compose.yml file
         state: absent                   # Corresponds to 'docker compose down'
@@ -60,19 +58,25 @@
       ignore_errors: yes # Allows the playbook to continue even if 'down' fails (e.g., no services running initially)
 
     - name: Pull latest Docker images
-      # Uses docker_compose_v2 with the 'pull: always' policy
-      # This ensures Docker attempts to pull the latest image for each service
-      # (e.g., node, mysql) from Docker Hub or a configured registry.
       community.docker.docker_compose_v2:
         project_src: "{{ deploy_dir }}"
         pull: 'always' # Corrected to 'always' string
 
     - name: Build and run Docker Compose services
-      # Uses docker_compose_v2 to build new images from Dockerfiles and start services
-      community.docker.docker_compose_v2:
-        project_src: "{{ deploy_dir }}"
-        build: 'always' # <-- CHANGED HERE! Corrected to 'always' string
-        state: present               # Corresponds to 'docker compose up -d' (run in detached mode)
+      # FIX: Changed to 'ansible.builtin.shell' to allow setting environment variables directly
+      ansible.builtin.shell: |
+        # Change to the deployment directory first
+        cd "{{ deploy_dir }}"
+        # Export environment variables that docker compose will read from the host environment
+        export HOST_IP="{{ ansible_host }}"
+        export BACKEND_PORT="{{ backend_api_port }}"
+        export FRONTEND_PORT="{{ frontend_app_port }}" # Also for consistency if needed by docker-compose.yml
+
+        # Now run docker compose with --build and in detached mode
+        docker compose up --build -d
+      args:
+        # Ensures the command is run from the correct directory, though 'cd' is also used above
+        chdir: "{{ deploy_dir }}"
       register: compose_output # Stores the output of this command in a variable for debugging
 
     - name: Display docker compose output

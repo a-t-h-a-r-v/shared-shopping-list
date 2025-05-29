@@ -5,15 +5,7 @@
   become: yes # This means all tasks will run with sudo privileges on the target host
 
   # Variables are automatically loaded from ansible/group_vars/webservers.yml.
-  # These include both encrypted secrets (like db_password, jwt_secret)
-  # and other configuration variables (like db_user, db_name, frontend_app_port,
-  # backend_api_port, repo_url, deploy_dir).
-
   vars:
-    # This 'env_file_content' variable dynamically constructs the content
-    # of the .env file that will be placed on the remote server.
-    # It uses Jinja2 templating to inject values from group_vars/webservers.yml.
-    # Note: FRONTEND_URL here is for the backend's CORS setting.
     env_file_content: |
       DB_HOST=db
       DB_USER={{ db_user }}
@@ -21,64 +13,70 @@
       DB_NAME={{ db_name }}
       JWT_SECRET={{ jwt_secret }}
       FRONTEND_URL=http://{{ ansible_host }}:{{ frontend_app_port }}
-      PORT={{ backend_api_port }} # This is the port your backend Express app listens on internally
+      PORT={{ backend_api_port }}
 
   tasks:
     - name: Ensure deployment directory exists
       ansible.builtin.file:
-        path: "{{ deploy_dir }}" # Path on the remote server (e.g., /opt/shopping-list-app)
-        state: directory         # Ensures the directory exists
-        owner: "{{ ansible_user }}" # Sets the owner of the directory to the SSH user
-        group: "{{ ansible_user }}" # Sets the group of the directory to the SSH user
-        mode: '0755'             # Sets file permissions (rwx for owner, rx for group/others)
+        path: "{{ deploy_dir }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0755'
 
     - name: Clone or pull application repository
       ansible.builtin.git:
-        repo: "{{ repo_url }}"   # The Git repository URL (from group_vars)
-        dest: "{{ deploy_dir }}" # Destination path on the remote server
-        version: master          # The branch to clone/pull (change to 'main' if applicable)
-        accept_hostkey: yes     # Automatically accepts SSH host keys (use with caution in strict envs)
-        single_branch: yes      # Only clones/pulls the specified branch, saving bandwidth
-        force: yes              # Overwrites local changes (useful for CI/CD, use carefully)
-      become_user: "{{ ansible_user }}" # This task runs as the specified SSH user (not root)
+        repo: "{{ repo_url }}"
+        dest: "{{ deploy_dir }}"
+        version: master
+        accept_hostkey: yes
+        single_branch: yes
+        force: yes
+      become_user: "{{ ansible_user }}"
 
     - name: Create .env file with secrets
       ansible.builtin.copy:
-        content: "{{ env_file_content }}" # The content generated from the 'vars' section above
-        dest: "{{ deploy_dir }}/.env"     # Destination path for the .env file on the remote server
+        content: "{{ env_file_content }}"
+        dest: "{{ deploy_dir }}/.env"
         owner: "{{ ansible_user }}"
         group: "{{ ansible_user }}"
-        mode: '0640' # Secure permissions: owner read/write, group read, others no access
+        mode: '0640'
 
     - name: Bring down existing services (if any) and remove volumes
-      community.docker.docker_compose_v2:
-        project_src: "{{ deploy_dir }}" # Path to the docker-compose.yml file
-        state: absent                   # Corresponds to 'docker compose down'
-        remove_volumes: yes             # Removes volumes (like 'db_data') for a clean start
-      ignore_errors: yes # Allows the playbook to continue even if 'down' fails (e.g., no services running initially)
-
-    - name: Pull latest Docker images
+      # FIX: Add 'environment' block to pass variables to the task's execution context
+      environment:
+        HOST_IP: "{{ ansible_host }}"
+        BACKEND_PORT: "{{ backend_api_port }}"
+        FRONTEND_PORT: "{{ frontend_app_port }}"
       community.docker.docker_compose_v2:
         project_src: "{{ deploy_dir }}"
-        pull: 'always' # Corrected to 'always' string
+        state: absent
+        remove_volumes: yes
+      ignore_errors: yes
+
+    - name: Pull latest Docker images
+      # FIX: Add 'environment' block for consistency
+      environment:
+        HOST_IP: "{{ ansible_host }}"
+        BACKEND_PORT: "{{ backend_api_port }}"
+        FRONTEND_PORT: "{{ frontend_app_port }}"
+      community.docker.docker_compose_v2:
+        project_src: "{{ deploy_dir }}"
+        pull: 'always'
 
     - name: Build and run Docker Compose services
-      # FIX: Changed to 'ansible.builtin.shell' to allow setting environment variables directly
       ansible.builtin.shell: |
-        # Change to the deployment directory first
         cd "{{ deploy_dir }}"
         # Export environment variables that docker compose will read from the host environment
         export HOST_IP="{{ ansible_host }}"
         export BACKEND_PORT="{{ backend_api_port }}"
-        export FRONTEND_PORT="{{ frontend_app_port }}" # Also for consistency if needed by docker-compose.yml
+        export FRONTEND_PORT="{{ frontend_app_port }}"
 
-        # Now run docker compose with --build and in detached mode
         docker compose up --build -d
       args:
-        # Ensures the command is run from the correct directory, though 'cd' is also used above
         chdir: "{{ deploy_dir }}"
-      register: compose_output # Stores the output of this command in a variable for debugging
+      register: compose_output
 
     - name: Display docker compose output
       ansible.builtin.debug:
-        var: compose_output.stdout_lines # Prints the stdout lines from the previous task
+        var: compose_output.stdout_lines

@@ -6,7 +6,6 @@ pipeline {
     environment {
         ANSIBLE_INVENTORY_VM_IP = '192.168.29.41'
         ANSIBLE_VM_SSH_USER = 'atharv'
-        # Note: frontend_app_port, backend_api_port, deploy_dir, repo_url are handled by Ansible group_vars
     }
 
     stages {

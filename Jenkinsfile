@@ -3,7 +3,7 @@ pipeline {
     agent any
 
     environment {
-        ANSIBLE_INVENTORY_VM_IP = '192.168.29.41'
+        ANSIBLE_INVENTORY_VM_IP = '172.16.52.41'
         ANSIBLE_VM_SSH_USER = 'atharv'
     }
 

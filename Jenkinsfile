@@ -1,5 +1,4 @@
 // Jenkinsfile
-
 pipeline {
     agent any
 
@@ -12,7 +11,8 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 echo "Checking out code..."
-                git credentialsId: 'github-credentals', url: 'https://github.com/a-t-h-a-r-v/shared-shopping-list.git'
+                // Ensure this ID matches the one you created in Jenkins
+                git credentialsId: 'github-credentials', url: 'https://github.com/a-t-h-a-r-v/shared-shopping-list.git'
             }
         }
 
@@ -25,7 +25,6 @@ pipeline {
         }
 
         stage('Run Ansible Deployment') {
-            // FIX: Add 'steps' block here
             steps {
                 echo "Starting Ansible deployment playbook..."
                 withCredentials([
@@ -42,7 +41,7 @@ pipeline {
                         sh "ansible-playbook ansible/deploy.yml -i ansible/jenkins_inventory.ini --vault-password-file <(echo ${ANSIBLE_VAULT_PASS})"
                     }
                 }
-            } // FIX: Close 'steps' block
+            }
         }
     }
 

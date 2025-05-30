@@ -13,7 +13,7 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 echo "Checking out code..."
-                git credentialsId: 'your-git-credential-id', url: 'https://github.com/your-username/shared-shopping-list.git'
+                git credentialsId: 'github-credentals', url: 'https://github.com/a-t-h-a-r-v/shared-shopping-list.git'
             }
         }
 
@@ -28,10 +28,10 @@ pipeline {
         stage('Run Ansible Deployment') {
             echo "Starting Ansible deployment playbook..."
             withCredentials([
-                sshUserPrivateKey(credentialsId: 'your-ssh-key-id', keyFileVariable: 'ANSIBLE_SSH_KEY_FILE'),
+                sshUserPrivateKey(credentialsId: 'debian-vm-key', keyFileVariable: 'ANSIBLE_SSH_KEY_FILE'),
                 string(credentialsId: 'ansible-vault-password', variable: 'ANSIBLE_VAULT_PASS')
             ]) {
-                sshagent(credentials: ['your-ssh-key-id']) {
+                sshagent(credentials: ['debian-vm-key']) {
                     sh """
                         echo "[webservers]" > ansible/jenkins_inventory.ini
                         echo "${ANSIBLE_INVENTORY_VM_IP} ansible_user=${ANSIBLE_VM_SSH_USER} ansible_ssh_private_key_file=${ANSIBLE_SSH_KEY_FILE}" >> ansible/jenkins_inventory.ini

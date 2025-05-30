@@ -25,21 +25,24 @@ pipeline {
         }
 
         stage('Run Ansible Deployment') {
-            echo "Starting Ansible deployment playbook..."
-            withCredentials([
-                sshUserPrivateKey(credentialsId: 'debian-vm-key', keyFileVariable: 'ANSIBLE_SSH_KEY_FILE'),
-                string(credentialsId: 'ansible-vault-password', variable: 'ANSIBLE_VAULT_PASS')
-            ]) {
-                sshagent(credentials: ['debian-vm-key']) {
-                    sh """
-                        echo "[webservers]" > ansible/jenkins_inventory.ini
-                        echo "${ANSIBLE_INVENTORY_VM_IP} ansible_user=${ANSIBLE_VM_SSH_USER} ansible_ssh_private_key_file=${ANSIBLE_SSH_KEY_FILE}" >> ansible/jenkins_inventory.ini
-                        chmod 600 ansible/jenkins_inventory.ini # Secure permissions for the inventory file
-                    """
-                    echo "Executing ansible-playbook deploy.yml..."
-                    sh "ansible-playbook ansible/deploy.yml -i ansible/jenkins_inventory.ini --vault-password-file <(echo ${ANSIBLE_VAULT_PASS})"
+            // FIX: Add 'steps' block here
+            steps {
+                echo "Starting Ansible deployment playbook..."
+                withCredentials([
+                    sshUserPrivateKey(credentialsId: 'debian-vm-key', keyFileVariable: 'ANSIBLE_SSH_KEY_FILE'),
+                    string(credentialsId: 'ansible-vault-password', variable: 'ANSIBLE_VAULT_PASS')
+                ]) {
+                    sshagent(credentials: ['debian-vm-key']) {
+                        sh """
+                            echo "[webservers]" > ansible/jenkins_inventory.ini
+                            echo "${ANSIBLE_INVENTORY_VM_IP} ansible_user=${ANSIBLE_VM_SSH_USER} ansible_ssh_private_key_file=${ANSIBLE_SSH_KEY_FILE}" >> ansible/jenkins_inventory.ini
+                            chmod 600 ansible/jenkins_inventory.ini # Secure permissions for the inventory file
+                        """
+                        echo "Executing ansible-playbook deploy.yml..."
+                        sh "ansible-playbook ansible/deploy.yml -i ansible/jenkins_inventory.ini --vault-password-file <(echo ${ANSIBLE_VAULT_PASS})"
+                    }
                 }
-            }
+            } // FIX: Close 'steps' block
         }
     }
 

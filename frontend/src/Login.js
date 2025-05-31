@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
 
-function Login({ onSwitchToRegister }) {
+function Login() { // Removed onSwitchToRegister prop
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const { login } = useAuth();
+  const navigate = useNavigate(); // Initialize useNavigate
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,6 +28,7 @@ function Login({ onSwitchToRegister }) {
 
       if (response.ok) {
         login(data.accessToken, data.user);
+        navigate('/lists'); // Navigate to lists page after successful login
       } else {
         setError(data.message || 'Login failed.');
       }
@@ -66,7 +69,7 @@ function Login({ onSwitchToRegister }) {
       </form>
       <p style={styles.switchText}>
         Don't have an account?{' '}
-        <span onClick={onSwitchToRegister} style={styles.switchLink}>
+        <span onClick={() => navigate('/register')} style={styles.switchLink}> {/* Use navigate */}
           Register here.
         </span>
       </p>

@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
 
-function Register({ onSwitchToLogin }) {
+function Register() { // Removed onSwitchToLogin prop
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
+  const navigate = useNavigate(); // Initialize useNavigate
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -36,8 +38,7 @@ function Register({ onSwitchToLogin }) {
         setUsername('');
         setPassword('');
         setConfirmPassword('');
-        // Optionally, automatically switch to login after successful registration
-        // setTimeout(onSwitchToLogin, 2000);
+        setTimeout(() => navigate('/login'), 2000); // Automatically switch to login
       } else {
         setMessage(data.message || 'Registration failed.');
         setIsError(true);
@@ -93,7 +94,7 @@ function Register({ onSwitchToLogin }) {
       </form>
       <p style={styles.switchText}>
         Already have an account?{' '}
-        <span onClick={onSwitchToLogin} style={styles.switchLink}>
+        <span onClick={() => navigate('/login')} style={styles.switchLink}> {/* Use navigate */}
           Login here.
         </span>
       </p>

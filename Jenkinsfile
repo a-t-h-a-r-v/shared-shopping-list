@@ -2,9 +2,9 @@
 pipeline {
     agent any
 
-    environment {
-        ANSIBLE_INVENTORY_VM_IP = '172.16.52.41'
-        ANSIBLE_VM_SSH_USER = 'atharv'
+    parameters {
+        string(name: 'ANSIBLE_INVENTORY_VM_IP', defaultValue: '172.16.52.41', description: 'The IP address of the target Ansible VM')
+        string(name: 'ANSIBLE_VM_SSH_USER', defaultValue: 'atharv', description: 'The SSH username for connecting to the Ansible VM')
     }
 
     stages {

@@ -1,17 +1,21 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import { useAuth } from './AuthContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
 
-function Login({ onSwitchToRegister }) {
+function Login() { // Removed onSwitchToRegister prop
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const navigate = useNavigate(); // Initialize useNavigate
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
     try {
       const response = await fetch(`${BACKEND_URL}/api/login`, {
@@ -26,12 +30,15 @@ function Login({ onSwitchToRegister }) {
 
       if (response.ok) {
         login(data.accessToken, data.user);
+        // AuthContext will handle redirection to /app after login
       } else {
-        setError(data.message || 'Login failed.');
+        setError(data.message || 'Login failed. Please check your username and password.');
       }
     } catch (err) {
       console.error('Login request failed:', err);
-      setError('Network error or server unavailable.');
+      setError('Network error: Could not connect to the server. Please ensure the backend is running.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -48,6 +55,7 @@ function Login({ onSwitchToRegister }) {
             onChange={(e) => setUsername(e.target.value)}
             required
             style={styles.input}
+            disabled={loading}
           />
         </div>
         <div style={styles.formGroup}>
@@ -59,14 +67,17 @@ function Login({ onSwitchToRegister }) {
             onChange={(e) => setPassword(e.target.value)}
             required
             style={styles.input}
+            disabled={loading}
           />
         </div>
         {error && <p style={styles.error}>{error}</p>}
-        <button type="submit" style={styles.button}>Login</button>
+        <button type="submit" style={styles.button} disabled={loading}>
+          {loading ? 'Logging in...' : 'Login'}
+        </button>
       </form>
       <p style={styles.switchText}>
         Don't have an account?{' '}
-        <span onClick={onSwitchToRegister} style={styles.switchLink}>
+        <span onClick={() => navigate('/register')} style={styles.switchLink}> {/* Use navigate to /register */}
           Register here.
         </span>
       </p>

@@ -1,22 +1,27 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
 
-function Register({ onSwitchToLogin }) {
+function Register() { // Removed onSwitchToLogin prop
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate(); // Initialize useNavigate
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage('');
     setIsError(false);
+    setLoading(true);
 
     if (password !== confirmPassword) {
       setMessage('Passwords do not match.');
       setIsError(true);
+      setLoading(false);
       return;
     }
 
@@ -36,16 +41,18 @@ function Register({ onSwitchToLogin }) {
         setUsername('');
         setPassword('');
         setConfirmPassword('');
-        // Optionally, automatically switch to login after successful registration
-        // setTimeout(onSwitchToLogin, 2000);
+        // Optionally, navigate to login page after successful registration
+        // navigate('/login');
       } else {
-        setMessage(data.message || 'Registration failed.');
+        setMessage(data.message || 'Registration failed. Please try a different username.');
         setIsError(true);
       }
     } catch (err) {
       console.error('Registration request failed:', err);
-      setMessage('Network error or server unavailable.');
+      setMessage('Network error: Could not connect to the server. Please ensure the backend is running.');
       setIsError(true);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -62,6 +69,7 @@ function Register({ onSwitchToLogin }) {
             onChange={(e) => setUsername(e.target.value)}
             required
             style={styles.input}
+            disabled={loading}
           />
         </div>
         <div style={styles.formGroup}>
@@ -73,6 +81,7 @@ function Register({ onSwitchToLogin }) {
             onChange={(e) => setPassword(e.target.value)}
             required
             style={styles.input}
+            disabled={loading}
           />
         </div>
         <div style={styles.formGroup}>
@@ -84,16 +93,19 @@ function Register({ onSwitchToLogin }) {
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
             style={styles.input}
+            disabled={loading}
           />
         </div>
         {message && (
           <p style={isError ? styles.error : styles.success}>{message}</p>
         )}
-        <button type="submit" style={styles.button}>Register</button>
+        <button type="submit" style={styles.button} disabled={loading}>
+          {loading ? 'Registering...' : 'Register'}
+        </button>
       </form>
       <p style={styles.switchText}>
         Already have an account?{' '}
-        <span onClick={onSwitchToLogin} style={styles.switchLink}>
+        <span onClick={() => navigate('/login')} style={styles.switchLink}> {/* Use navigate to /login */}
           Login here.
         </span>
       </p>

@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom'; // Import useParams
 import ListItem from './ListItem';
 
-function ShoppingList({ socket, currentUserId, ownedLists }) { // Removed listId prop
-  const { listId } = useParams(); // Get listId from URL parameters
+function ShoppingList({ socket, listId, currentUserId, ownedLists }) {
   const [items, setItems] = useState([]);
   const [newItemText, setNewItemText] = useState('');
   const [usernameToShare, setUsernameToShare] = useState('');

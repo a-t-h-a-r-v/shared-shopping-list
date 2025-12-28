@@ -1,4 +1,3 @@
-// Jenkinsfile
 pipeline {
     agent any
 
@@ -11,17 +10,27 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 echo "Checking out code..."
-                // Ensure this ID matches the one you created in Jenkins
-                git credentialsId: 'github-credentials', url: 'https://github.com/a-t-h-a-r-v/shared-shopping-list.git'
+                git url: 'https://github.com/a-t-h-a-r-v/shared-shopping-list.git'
+            }
+        }
+
+        stage('Install Python and pip on Agent') {
+            steps {
+                sh '''
+                    apt-get update
+                    apt-get install -y python3 python3-pip
+                '''
             }
         }
 
         stage('Install Ansible Dependencies on Agent') {
             steps {
                 echo "Installing Ansible and community.docker collection on agent..."
-                sh 'pip install --user ansible'
+                sh 'pip3 install --user ansible'
                 sh 'ansible-galaxy collection install community.docker'
             }
+        }
+        // ... add your other stages here ...
         }
 
         stage('Run Ansible Deployment') {

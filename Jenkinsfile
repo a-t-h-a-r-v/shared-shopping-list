@@ -1,5 +1,7 @@
 pipeline {
-    agent any
+    agent {
+        docker { image 'willhallonline/ansible:latest' }
+    }
 
     parameters {
         string(name: 'ANSIBLE_INVENTORY_VM_IP', defaultValue: '172.16.52.41', description: 'The IP address of the target Ansible VM')
@@ -14,19 +16,9 @@ pipeline {
             }
         }
 
-        stage('Install Python and pip on Agent') {
+        stage('Install Ansible Collection') {
             steps {
-                sh '''
-                    apt-get update
-                    apt-get install -y python3 python3-pip
-                '''
-            }
-        }
-
-        stage('Install Ansible Dependencies on Agent') {
-            steps {
-                echo "Installing Ansible and community.docker collection on agent..."
-                sh 'pip3 install --user ansible'
+                echo "Installing community.docker collection on agent..."
                 sh 'ansible-galaxy collection install community.docker'
             }
         }

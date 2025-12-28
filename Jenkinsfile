@@ -30,8 +30,6 @@ pipeline {
                 sh 'ansible-galaxy collection install community.docker'
             }
         }
-        // ... add your other stages here ...
-        }
 
         stage('Run Ansible Deployment') {
             steps {
@@ -66,4 +64,3 @@ pipeline {
         }
     }
 }
-
